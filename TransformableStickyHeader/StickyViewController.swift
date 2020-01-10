@@ -138,6 +138,8 @@ final class StickyViewController: UIViewController {
         dataSource.apply(snapShot, animatingDifferences: true)
     }
 
+    private var stickyHeaderTop: Constraint?
+
     private func prepareViews() {
         // main scroll view
         mainScrollView.delegate = self
@@ -155,6 +157,7 @@ final class StickyViewController: UIViewController {
         stickyHeaderContainerView.backgroundColor = .systemGreen
 
         stickyHeaderContainerView.snp.makeConstraints { make in
+            self.stickyHeaderTop = make.top.equalToSuperview().constraint
             make.width.equalToSuperview()
             make.height.equalTo(125)
         }
@@ -274,16 +277,23 @@ extension StickyViewController: UICollectionViewDelegateFlowLayout {
 
 extension StickyViewController {
 
+    //https://github.com/roytang121/iOS-TwitterProfile/blob/master/LFTwitterProfile/Classes/TwitterProfileViewController.swift
+
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         var offset = scrollView.contentOffset.y
+        print("TOP INSET: \(scrollView.adjustedContentInset.top)")
 
         if offset < 0 {
-//             let headerScaleFactor: CGFloat = -(offset) / header.bounds.height
-//             let headerSizevariation = ((header.bounds.height * (1.0 + headerScaleFactor)) - header.bounds.height)/2.0
-//             headerTransform = CATransform3DTranslate(headerTransform, 0, headerSizevariation, 0)
-//             headerTransform = CATransform3DScale(headerTransform, 1.0 + headerScaleFactor, 1.0 + headerScaleFactor, 0)
-//
-//             header.layer.transform = headerTransform
+            let stickyOffset = abs(offset)
+            print("NEG")
+            print("TOP: \(stickyHeaderTop.debugDescription)")
+            print("INSET: \(scrollView.adjustedContentInset.top)")
+            stickyHeaderTop?.update(offset: scrollView.adjustedContentInset.top - stickyOffset)
+        } else {
+            print("POS")
+            print("TOP: \(stickyHeaderTop.debugDescription)")
+            print("INSET: \(scrollView.adjustedContentInset.top)")
+            stickyHeaderTop?.update(offset: scrollView.adjustedContentInset.top + offset)
         }
 
         print(offset)
