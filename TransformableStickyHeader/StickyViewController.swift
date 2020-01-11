@@ -139,6 +139,7 @@ final class StickyViewController: UIViewController {
     }
 
     private var stickyHeaderTop: Constraint?
+    private var stickyHeaderHeight: Constraint?
 
     private func prepareViews() {
         // main scroll view
@@ -159,7 +160,10 @@ final class StickyViewController: UIViewController {
         stickyHeaderContainerView.snp.makeConstraints { make in
             self.stickyHeaderTop = make.top.equalToSuperview().constraint
             make.width.equalToSuperview()
-            make.height.equalTo(125)
+//            make.height.equalTo(125)
+            make.height.greaterThanOrEqualToSuperview().multipliedBy(0.1)
+            make.height.lessThanOrEqualToSuperview().multipliedBy(0.5)
+            self.stickyHeaderHeight = make.height.equalToSuperview().multipliedBy(0.3).constraint
         }
 
         // blur effect on top of coverImageView
@@ -280,22 +284,51 @@ extension StickyViewController {
     //https://github.com/roytang121/iOS-TwitterProfile/blob/master/LFTwitterProfile/Classes/TwitterProfileViewController.swift
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        var offset = scrollView.contentOffset.y
+        let offset = scrollView.contentOffset.y
         print("TOP INSET: \(scrollView.adjustedContentInset.top)")
 
+        // streached down.
         if offset < 0 {
             let stickyOffset = abs(offset)
             print("NEG")
             print("TOP: \(stickyHeaderTop.debugDescription)")
-            print("INSET: \(scrollView.adjustedContentInset.top)")
+//            print("INSET: \(scrollView.adjustedContentInset.top)")
+            print("Header offset: \(scrollView.adjustedContentInset.top - stickyOffset)")
             stickyHeaderTop?.update(offset: scrollView.adjustedContentInset.top - stickyOffset)
+            
         } else {
+            let stickyOffset = abs(offset)
             print("POS")
             print("TOP: \(stickyHeaderTop.debugDescription)")
             print("INSET: \(scrollView.adjustedContentInset.top)")
+            print("Header offset: \(scrollView.adjustedContentInset.top + stickyOffset)")
             stickyHeaderTop?.update(offset: scrollView.adjustedContentInset.top + offset)
         }
+        
+        if offset <= -scrollView.adjustedContentInset.top {
+            let desiredHeight = view.frame.height * 0.5 // 250
+            let streachProgress = min(1, abs(scrollView.adjustedContentInset.top - abs(offset)) / desiredHeight)
+            print("Streach down progress: \(streachProgress)")
+            // scaling effect
+            let scalingFactor = 1 + min(log(streachProgress + 1), 2)
+            stickyHeaderContainerView.transform = CGAffineTransform(scaleX: 1+streachProgress, y: 1+streachProgress)
+        } else {
+            let desiredMinHeight = view.frame.height * 0.1
+            let streachProgress: CGFloat
+            
+            if offset < 0 {
+                streachProgress = min(1, abs(scrollView.adjustedContentInset.top - abs(offset)) / desiredMinHeight)
+            } else {
+                streachProgress = min(1, abs(scrollView.adjustedContentInset.top + abs(offset)) / desiredMinHeight)
+            }
+            print("Streach up progress: \(streachProgress)")
+            print("Streach up constant: \(-desiredMinHeight * streachProgress)")
 
+            stickyHeaderHeight?.update(offset: -desiredMinHeight * streachProgress)
+        }
+        
+        
+        
         print(offset)
     }
 
